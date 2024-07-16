@@ -14,7 +14,10 @@ const playerController = {
       if (!room) {
         return res.status(404).json({ error: 'Room not found' });
       }
-
+      if (room.gameStarted) {
+        console.log(`Game has already started ${name} couldnt join in `)
+        return res.status(400).json({ error: 'Game has already started' });
+      }
       const newPlayer = {
         _id: new mongoose.Types.ObjectId(), 
         name: name, 

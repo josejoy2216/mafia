@@ -16,6 +16,8 @@ app.use(bodyParser.json());
 app.use('/api', roomRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/endgame', roomRoutes);
+app.use('/api/startgame', roomRoutes);
+
 //app.use('/api/games', gameRoutes);
 
 const server = http.createServer(app);

@@ -23,9 +23,8 @@ function Lobby() {
         const response = await axios.get(url);
         setPlayers(response.data.players);
         setRoomCode(response.data.roomCode);
-        setPlayerName(response.data.playerName); 
+        setPlayerName(response.data.playerName);
         setHostId(response.data.hostId);
-        
       } catch (error) {
         console.error('Error fetching room and players:', error);
       }
@@ -39,24 +38,39 @@ function Lobby() {
       fetchRoomAndPlayers();
     });
 
+    newSocket.on('playerExited', (exitedPlayerId) => {
+      setPlayers(prevPlayers => prevPlayers.filter(player => player._id !== exitedPlayerId));
+    });
+
     newSocket.on('gameEnded', () => {
       navigate('/');
     });
 
+    newSocket.on('gameStarted', () => {
+      navigate(`/startgame/${roomId}/${userId}`);
+    });
+
     return () => {
       newSocket.off('newPlayer');
+      newSocket.off('playerExited');
       newSocket.off('gameEnded');
+      newSocket.off('gameStarted');
       newSocket.disconnect();
     };
   }, [roomId, userId, navigate]);
 
-  const startGame = () => {
-    alert("new game start")
+  const startGame = async () => {
+    try {
+      await axios.post(`http://localhost:5000/api/startgame/${roomId}/${userId}`);
+      socket.emit('startGame', roomId);
+    } catch (error) {
+      console.error('Error starting game:', error);
+    }
   };
 
   const endGame = async () => {
     try {
-      console.log("game Ended")
+      console.log('game Ended');
       await axios.delete(`http://localhost:5000/api/endgame/${roomId}`);
       socket.emit('endGame', roomId);
     } catch (error) {
@@ -65,10 +79,17 @@ function Lobby() {
   };
 
   const exitGame = async () => {
-    alert("new game start")
+    try {
+      console.log('exiting game');
+      await axios.delete(`http://localhost:5000/api/exitgame/${roomId}/${userId}`);
+      socket.emit('exitGame', roomId, userId);
+      navigate('/');
+    } catch (error) {
+      console.error('Error exiting game:', error);
+    }
   };
 
-  return ( 
+  return (
     <div>
       <h1>Lobby</h1>
       <h2>Room Code: {roomCode}</h2>
@@ -85,7 +106,7 @@ function Lobby() {
       {userId === hostId && (
         <button onClick={endGame}>End Game</button>
       )}
-      {userId != hostId && (
+      {userId !== hostId && (
         <button onClick={exitGame}>Exit Game</button>
       )}
     </div>

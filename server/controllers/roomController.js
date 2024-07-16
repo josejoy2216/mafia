@@ -4,6 +4,15 @@ const Room = require('../models/Room');
 const mongoose = require('mongoose');
 const generateRoomCode = require('../utils/generateRoomCode');
 
+const shuffleArray = (array) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
+
+
 // Controller methods
 const roomController = {
   //create room -----------------------------------
@@ -41,7 +50,7 @@ const roomController = {
     }
   },
 
-   // Delete room by ID ------------------
+   // Delete room by ID ------------------------------------
    deleteRoomById: async (req, res) => {
     try {
       const roomId = req.params.roomId;
@@ -56,6 +65,110 @@ const roomController = {
       res.status(500).json({ error: 'Failed to delete room' });
     }
   },
+
+  // Remove player from the list  ---------------------
+  removePlayerFromRoom: async (req, res) => {
+    try {
+      const { roomId, playerId } = req.params;
+      console.log(`Removing player ${playerId} from room ${roomId}`);
+      const room = await Room.findById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+
+      room.players = room.players.filter(player => player._id.toString() !== playerId);
+      await room.save();
+
+      res.status(200).send('Player removed');
+    } catch (err) {
+      console.error('Error removing player:', err);
+      res.status(500).json({ error: 'Failed to remove player' });
+    }
+  },
+
+  
+  // Start the game
+  startGame: async (req, res) => {
+    try {
+      const { roomId, playerId } = req.params;
+      const room = await Room.findById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+
+      const playerCount = room.players.length;
+
+      // Calculate the number of roles
+      const numMafia = Math.floor(playerCount / 4);
+      const numPolice = Math.floor(playerCount / 4);
+      const numCivilians = playerCount - numMafia - numPolice;
+
+      // Create an array with the role distribution
+      let roles = Array(numMafia).fill('mafia')
+        .concat(Array(numPolice).fill('police'))
+        .concat(Array(numCivilians).fill('civilian'));
+
+      // Shuffle the roles array
+      roles = shuffleArray(roles);
+
+      // Assign roles to players
+      room.players.forEach((player, index) => {
+        player.role = roles[index];
+      });
+
+      // Set game status
+      room.gameStarted = true;
+      room.phase = 'night';
+
+      await room.save();
+
+      //io.to(roomId).emit('gameStarted', { message: 'Game has started', room });
+
+      res.json({ message: 'Game started' });
+    } catch (err) {
+      console.error('Error starting game:', err);
+      res.status(500).json({ error: 'Failed to start game' });
+    }
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  //get room details 
+  getRoomDetails : async (req, res) => {
+    try {
+      const { roomId } = req.params;
+  
+      // Populate room details including host, players, and game actions
+      const room = await Room.findById(roomId).exec();
+  
+      if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+  
+      res.json(room); // Return the entire room details
+    } catch (err) {
+      console.error('Error fetching room details:', err);
+      res.status(500).json({ error: 'Failed to fetch room details' });
+    }
+  },
+
+
+
+
+
 
 
 
@@ -123,47 +236,10 @@ const roomController = {
       console.error('Error updating room:', err);
       res.status(500).json({ error: 'Failed to update room' });
     }
-  },
+  }
 
  
-    // Fetch players in a room
-    getPlayersInRoom: async (req, res) => {
-      try {
-        const { roomId } = req.params;
-        const room = await Room.findById(roomId).populate('players');
-        if (!room) {
-          return res.status(404).json({ error: 'Room not found' });
-        }
-        res.json({ players: room.players });
-      } catch (err) {
-        console.error('Error fetching players:', err);
-        res.status(500).json({ error: 'Failed to fetch players' });
-      }
-    },
   
-
-  // Start the game
-  startGame: async (req, res) => {
-    try {
-      const { code, id } = req.params;
-      const room = await Room.findOne({ code });
-      if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
-      }
-      if (room.host.toString() !== id) {
-        return res.status(403).json({ error: 'Only the host can start the game' });
-      }
-
-      // Game start logic (e.g., assign roles, set phase to 'night')
-      room.gameStarted = true;
-      await room.save();
-
-      res.json({ message: 'Game started' });
-    } catch (err) {
-      console.error('Error starting game:', err);
-      res.status(500).json({ error: 'Failed to start game' });
-    }
-  }
 
 };
 

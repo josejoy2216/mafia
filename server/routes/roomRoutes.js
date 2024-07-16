@@ -18,14 +18,28 @@ router.get('/lobby/:roomId/:id', (req, res, next) => {
   next();
 }, playerController.getAllPlayers);
 
+// GET room by roomId and userId
+router.get('/room/:roomId/:userId', roomController.getRoomDetails)
+
+// Route to delete a room 
 router.delete('/endgame/:roomId',  (req, res, next) => {
-  console.log(`Received request to delete room code: ${req.params.roomId}`);
+  console.log(`Received request to delete room with code: ${req.params.roomId}`);
   next();
 }, roomController.deleteRoomById)
 
+// Route to delete player from the room
+router.delete('/exitgame/:roomId/:playerId', (req, res, next) => {
+  console.log(`Received request to remove player ${req.params.playerId} from room ${req.params.roomId}`);
+  next();
+}, roomController.removePlayerFromRoom);
+
+
 
 // Route to start the game
-router.post('/start/:code/:id', roomController.startGame);
+router.post('/startgame/:roomId/:playerId',  (req, res, next) => {
+  console.log(`Received request to start game of player ${req.params.playerId} from room ${req.params.roomId}`);
+  next();
+}, roomController.startGame);
 
 
 module.exports = router;

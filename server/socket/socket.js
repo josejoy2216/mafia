@@ -27,6 +27,20 @@ const socket = (server) => {
       io.to(roomId).emit('gameEnded');
     });
 
+    // Handle player exiting the game
+    socket.on('exitGame', (roomId, playerId) => {
+      io.to(roomId).emit('playerExited', playerId);
+    });
+
+
+
+
+
+
+
+
+    
+
     // Handle night phase actions
     socket.on('nightAction', (data) => {
       io.to(data.roomCode).emit('nightAction', data);

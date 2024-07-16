@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
 import PlayerList from './PlayerList';
 import Narrator from './Narrator';
 
-const Game = ({ roomCode, playerName }) => {
+const Game = () => {
+  const { roomId, userId } = useParams();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [nominations, setNominations] = useState([]);
   const [mafiaTarget, setMafiaTarget] = useState('');
   const [policeGuess, setPoliceGuess] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoom = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/room/${roomCode}`);
+        const response = await axios.get(`http://localhost:5000/api/room/${roomId}/${userId}`);
+        
         setRoom(response.data);
         setError(null);
       } catch (error) {
@@ -27,27 +31,17 @@ const Game = ({ roomCode, playerName }) => {
     };
 
     fetchRoom();
-  }, [roomCode]);
-
-  const handleStartGame = async () => {
-    try {
-      setLoading(true);
-      await axios.post(`http://localhost:5000/api/start-game/${roomCode}`);
-      const response = await axios.get(`http://localhost:5000/api/room/${roomCode}`);
-      setRoom(response.data);
-      setError(null);
-    } catch (error) {
-      console.error('Error starting game:', error);
-      setError(error.response?.data?.message || 'Failed to start game');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [roomId, userId]);
 
   const handleNightAction = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`http://localhost:5000/api/night-action/${roomCode}/${room.players.find(player => player.name === playerName)._id}`, {
+      const player = room.players.find(player => player._id === userId);
+      if (!player) {
+        setError('Player not found');
+        return;
+      }
+      const response = await axios.post(`http://localhost:5000/api/night-action/${roomId}/${userId}`, {
         mafiaTarget,
         policeGuess
       });
@@ -76,7 +70,7 @@ const Game = ({ roomCode, playerName }) => {
   const handleVote = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`http://localhost:5000/api/vote/${roomCode}`, {
+      const response = await axios.post(`http://localhost:5000/api/vote/${roomId}`, {
         playerName: nominations[0]
       });
       setRoom(response.data);
@@ -89,7 +83,7 @@ const Game = ({ roomCode, playerName }) => {
     }
   };
 
-  if (!room || loading) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
@@ -97,59 +91,57 @@ const Game = ({ roomCode, playerName }) => {
     return <div>Error: {error}</div>;
   }
 
-  const canStartGame = room.players.length >= 4;
+  if (!room) {
+    return <div>Room not found</div>;
+  }
+
+  const player = room.players.find(player => player._id === userId);
+  const isPlayerMafia = player.role === 'mafia';
+  const isPlayerPolice = player.role === 'police';
+  const isPlayerAlive = player.alive;
 
   return (
     <div>
       <h2>Room Code: {room.code}</h2>
+      <h2>Player Name: {player.name}</h2>
       <Narrator phase={room.phase} />
-      {!room.gameStarted && (
-        <div>
-          <h3>Players in Lobby:</h3>
-          <ul>
-            {room.players.map((player) => (
-              <li key={player.name}>{player.name}</li>
-            ))}
-          </ul>
-          {canStartGame && (
-            <button onClick={handleStartGame}>Start Game</button>
-          )}
-        </div>
-      )}
-      {room.gameStarted && room.phase === 'night' && (
+      
+      {room.gameStarted && room.phase === 'night' && isPlayerAlive && (
         <div>
           <h3>Night Phase</h3>
-          {room.players.find(player => player.name === playerName && player.role === 'mafia') && (
+          {isPlayerMafia && (
             <div>
               <label>Mafia's Target:</label>
               <select value={mafiaTarget} onChange={(e) => setMafiaTarget(e.target.value)}>
                 <option value="">Select a player to kill</option>
                 {room.players.filter(player => player.alive && player.role !== 'mafia').map(player => (
-                  <option key={player.name} value={player.name}>{player.name}</option>
+                  <option key={player._id} value={player._id}>{player.name}</option>
                 ))}
               </select>
             </div>
           )}
-          {room.players.find(player => player.name === playerName && player.role === 'police') && (
+          {isPlayerPolice && (
             <div>
               <label>Police's Guess:</label>
               <select value={policeGuess} onChange={(e) => setPoliceGuess(e.target.value)}>
                 <option value="">Select a player to guess</option>
                 {room.players.filter(player => player.alive && player.role !== 'police').map(player => (
-                  <option key={player.name} value={player.name}>{player.name}</option>
+                  <option key={player._id} value={player._id}>{player.name}</option>
                 ))}
               </select>
             </div>
           )}
-          {!room.players.find(player => player.name === playerName) && (
+          {!isPlayerMafia && !isPlayerPolice && (
             <div>
               <p>City is sleeping...</p>
             </div>
           )}
-          <button onClick={handleNightAction}>Submit Night Actions</button>
+          {(isPlayerMafia || isPlayerPolice) && (
+            <button onClick={handleNightAction}>Submit Night Actions</button>
+          )}
         </div>
       )}
-      {room.gameStarted && room.phase === 'day' && (
+      {room.gameStarted && room.phase === 'day' && isPlayerAlive && (
         <div>
           <h3>Day Phase</h3>
           <p>Discuss and vote on who you think the mafia is!</p>
