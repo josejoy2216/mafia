@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 import axios from 'axios';
+import socket from '../socket'; // Import the socket instance
 
 function Lobby() {
   const { roomId, userId } = useParams();
   const [players, setPlayers] = useState([]);
-  const [socket, setSocket] = useState(null);
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [hostId, setHostId] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000');
-    setSocket(newSocket);
-
     const fetchRoomAndPlayers = async () => {
       try {
         const url = `http://localhost:5000/api/lobby/${roomId}/${userId}`;
@@ -32,30 +28,29 @@ function Lobby() {
 
     fetchRoomAndPlayers();
 
-    newSocket.emit('joinRoom', roomId);
+    socket.emit('joinRoom', roomId);
 
-    newSocket.on('newPlayer', () => {
+    socket.on('newPlayer', () => {
       fetchRoomAndPlayers();
     });
 
-    newSocket.on('playerExited', (exitedPlayerId) => {
+    socket.on('playerExited', (exitedPlayerId) => {
       setPlayers(prevPlayers => prevPlayers.filter(player => player._id !== exitedPlayerId));
     });
 
-    newSocket.on('gameEnded', () => {
+    socket.on('gameEnded', () => {
       navigate('/');
     });
 
-    newSocket.on('gameStarted', () => {
+    socket.on('gameStarted', () => {
       navigate(`/startgame/${roomId}/${userId}`);
     });
 
     return () => {
-      newSocket.off('newPlayer');
-      newSocket.off('playerExited');
-      newSocket.off('gameEnded');
-      newSocket.off('gameStarted');
-      newSocket.disconnect();
+      socket.off('newPlayer');
+      socket.off('playerExited');
+      socket.off('gameEnded');
+      socket.off('gameStarted');
     };
   }, [roomId, userId, navigate]);
 
@@ -107,7 +102,10 @@ function Lobby() {
         <button onClick={endGame}>End Game</button>
       )}
       {userId !== hostId && (
+        <>
+        <h3>Waiting for the host to start the game..... </h3>
         <button onClick={exitGame}>Exit Game</button>
+        </>
       )}
     </div>
   );

@@ -10,52 +10,46 @@ const socket = (server) => {
   io.on('connection', (socket) => {
     console.log('New client connected');
 
-    // Handle player joining a room
     socket.on('joinRoom', (roomCode) => {
       socket.join(roomCode);
       io.to(roomCode).emit('newPlayer', socket.id);
     });
 
-    // Handle starting the game
     socket.on('startGame', (roomCode) => {
       io.to(roomCode).emit('gameStarted');
     });
 
-    // Handle ending the game
-    socket.on('endGame', (roomId) => {
-      console.log(`Ending game for room: ${roomId}`);
-      io.to(roomId).emit('gameEnded');
+    socket.on('endGame', (roomCode) => {
+      console.log(`Ending game for room: ${roomCode}`);
+      io.to(roomCode).emit('gameEnded');
     });
 
-    // Handle player exiting the game
-    socket.on('exitGame', (roomId, playerId) => {
-      io.to(roomId).emit('playerExited', playerId);
+    socket.on('exitGame', (roomCode, playerId) => {
+      io.to(roomCode).emit('playerExited', playerId);
     });
 
+    socket.on('gameStateUpdate', (roomId, playerId) => {
+      io.to(roomId).emit('gameStateUpdate', playerId);
+    });
 
-
-
-
-
-
-
-    
-
-    // Handle night phase actions
     socket.on('nightAction', (data) => {
       io.to(data.roomCode).emit('nightAction', data);
     });
 
-    // Handle day phase actions
-    socket.on('dayAction', (data) => {
-      io.to(data.roomCode).emit('dayAction', data);
+    socket.on('vote', (data) => {
+      io.to(data.roomCode).emit('vote', data);
     });
 
-    // Handle client disconnection
+    // Handle police win message
+    socket.on('policeWinMessage', (message) => {
+      io.to(roomId).emit('policeWinMessage', message);
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected');
     });
   });
 };
+
 
 module.exports = socket;

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const roomController = require('../controllers/roomController');
 const playerController = require('../controllers/playerController');
+const gameController = require('../controllers/gameController');
+
 
 // Route to create a new room
 router.post('/create', roomController.createRoom);
@@ -33,13 +35,16 @@ router.delete('/exitgame/:roomId/:playerId', (req, res, next) => {
   next();
 }, roomController.removePlayerFromRoom);
 
-
-
 // Route to start the game
 router.post('/startgame/:roomId/:playerId',  (req, res, next) => {
   console.log(`Received request to start game of player ${req.params.playerId} from room ${req.params.roomId}`);
   next();
 }, roomController.startGame);
+
+router.post('/night-action/:roomId/:userId',(req, res, next) => {
+  console.log(`Received request for room code: ${req.params.roomId}, player id: ${req.params.userId}`);
+  next();
+}, gameController.handleNightAction);
 
 
 module.exports = router;

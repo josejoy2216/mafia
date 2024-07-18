@@ -14,9 +14,11 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/api', roomRoutes);
+app.use('/api/vote', roomRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/endgame', roomRoutes);
 app.use('/api/startgame', roomRoutes);
+app.use('/api/night-action', roomRoutes);
 
 //app.use('/api/games', gameRoutes);
 

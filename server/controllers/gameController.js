@@ -1,8 +1,5 @@
 // Import necessary models and utilities
 const Room = require('../models/Room');
-// const Player = require('../models/Player');
-// const Game = require('../models/Game');
-const generateRoomCode = require('../utils/generateRoomCode');
 
 // Helper function to check win conditions
 const checkWinConditions = async (roomId) => {
@@ -98,130 +95,134 @@ const gameController = {
     }
   },
 
-  // Night actions (Mafia and Police actions)
-  performNightActions: async (req, res) => {
-    const { roomCode, playerId, targetId } = req.body;
+  handleNightAction: async (req, res) => {
+    const { roomId, userId } = req.params;
+    const { mafiaTarget, policeGuess } = req.body;
 
     try {
-      // Find the room by room code
-      const room = await Room.findOne({ code: roomCode }).populate('players');
+      // Ensure roomId is defined
+      if (!roomId) {
+        return res.status(400).json({ message: 'Room ID is required' });
+      }
+
+      const room = await Room.findById(roomId).populate('players');
       if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
+        return res.status(404).json({ message: 'Room not found' });
       }
 
-      // Check if the player is alive and belongs to the room
-      const player = room.players.find(p => p._id.equals(playerId) && p.status === 'alive');
+      const player = room.players.find(player => player._id.toString() === userId);
       if (!player) {
-        return res.status(403).json({ error: 'Player not authorized for actions' });
+        return res.status(404).json({ message: 'Player not found' });
       }
 
-      // Check game phase
-      if (room.phase !== 'night') {
-        return res.status(403).json({ error: 'Night phase actions not allowed at this time' });
-      }
-
-      // Perform Mafia actions (kill target)
-      if (player.role === 'mafia') {
-        const targetPlayer = room.players.find(p => p._id.equals(targetId) && p.status === 'alive');
-        if (targetPlayer) {
-          targetPlayer.status = 'dead'; // Mark target player as dead
-          await targetPlayer.save();
-        }
-      }
-
-      // Perform Police actions (guess mafia)
-      if (player.role === 'police') {
-        const guessedPlayer = room.players.find(p => p._id.equals(targetId) && p.status === 'alive');
-        if (guessedPlayer && guessedPlayer.role === 'mafia') {
-          guessedPlayer.status = 'dead'; // Mark guessed mafia as dead
-          await guessedPlayer.save();
-        }
-      }
-
-      // Update nominations in the room (for day phase)
-      room.nominations.push(targetId);
-      await room.save();
-
-      // Check win conditions after night actions
-      const winner = await checkWinConditions(room._id);
-      if (winner) {
-        // Game end conditions met
-        const message = `Game over. ${winner} wins!`;
-        res.status(200).json({ message });
-        // Perform cleanup (delete game data, reset room, etc.)
-        // This can be implemented as needed based on your requirements
-        // For now, we assume game data deletion logic is handled separately
+      if (player.role === 'mafia' && mafiaTarget) {
+        // Assign mafiaTarget if player is mafia
+        room.game.nightActions.mafiaTarget = mafiaTarget;
+      } else if (player.role === 'police' && policeGuess) {
+        // Assign policeGuess if player is police
+        room.game.nightActions.policeGuess = policeGuess;
       } else {
-        // Proceed to day phase
-        room.phase = 'day';
-        await room.save();
-        res.status(200).json({ message: 'Night actions completed. Proceed to day phase.' });
+        return res.status(400).json({ message: 'Invalid action for current role or missing selection' });
       }
-    } catch (err) {
-      console.error('Error performing night actions:', err);
-      res.status(500).json({ error: 'Failed to perform night actions' });
+
+      // Check if both mafia and police actions are complete
+      const mafiaActionComplete = room.game.nightActions.mafiaTarget;
+      const policeActionComplete = room.game.nightActions.policeGuess;
+
+      if (mafiaActionComplete && policeActionComplete) {
+        // Move to day phase
+        room.phase = 'day';
+        room.game.phase = 'day';
+
+        // Resolve night actions
+        const mafiaKilledPlayer = room.players.find(player => player._id.toString() === mafiaActionComplete);
+        if (mafiaKilledPlayer) {
+          mafiaKilledPlayer.isAlive = false;
+          mafiaKilledPlayer.status = 'dead';
+          console.log("Mafia killed:", mafiaKilledPlayer.name);
+        }
+
+        // Check if policeGuess matches mafia player's ID
+        const mafiaPlayer = room.players.find(player => player.role === 'mafia');
+        if (policeGuess === mafiaPlayer._id.toString()) {
+          // Send message to all players that police won
+          const message = `Police won! The mafia player ${mafiaPlayer.name} was correctly identified.`;
+          const io = req.app.get('io');
+          io.to(roomId).emit('policeWinMessage', message);
+        }
+
+        await room.save();
+        // Emit updated room state to all clients in the room
+        const io = req.app.get('io');
+        io.to(roomId).emit('gameStateUpdate', room);
+
+        res.json({ room });
+      } else {
+        await room.save();
+        res.json({ room });
+      }
+    } catch (error) {
+      console.error('Error handling night action:', error);
+      res.status(500).json({ message: 'Server error' });
     }
   },
+
 
   // Day voting (players vote to eliminate a player)
   voteDay: async (req, res) => {
     const { roomCode, voterId, targetId } = req.body;
 
     try {
-      // Find the room by room code
-      const room = await Room.findOne({ code: roomCode }).populate('players');
+      const room = await Room.findById(roomId).populate('players');
       if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
+        return res.status(404).json({ message: 'Room not found' });
       }
-
-      // Check if the voter is alive and belongs to the room
-      const voter = room.players.find(p => p._id.equals(voterId) && p.status === 'alive');
-      if (!voter) {
-        return res.status(403).json({ error: 'Player not authorized to vote' });
+  
+      const player = room.players.id(playerId);
+      if (!player) {
+        return res.status(404).json({ message: 'Player not found' });
       }
-
-      // Check game phase
+  
       if (room.phase !== 'day') {
-        return res.status(403).json({ error: 'Day phase voting not allowed at this time' });
+        return res.status(400).json({ message: 'Voting is not allowed in the current phase' });
       }
-
-      // Check if target is alive and belongs to the room
-      const targetPlayer = room.players.find(p => p._id.equals(targetId) && p.status === 'alive');
-      if (!targetPlayer) {
-        return res.status(403).json({ error: 'Target player not valid for voting' });
-      }
-
-      // Ensure voter can vote only once
-      if (!voter.canVote) {
-        return res.status(403).json({ error: 'Player has already voted' });
-      }
-
-      // Update voter's canVote status
-      voter.canVote = false;
-      await voter.save();
-
-      // Update room with the vote
-      room.nominations.push(targetId);
-      await room.save();
-
-      // Check win conditions after voting
-      const winner = await checkWinConditions(room._id);
-      if (winner) {
-        // Game end conditions met
-        const message = `Game over. ${winner} wins!`;
-        res.status(200).json({ message });
-        // Perform cleanup (delete game data, reset room, etc.)
-        // This can be implemented as needed based on your requirements
-        // For now, we assume game data deletion logic is handled separately
-      } else {
-        // Proceed to next night phase if game continues
+  
+      // Handle voting logic
+      const vote = { voter: req.body.voterId, target: playerId };
+      room.game.dayActions.votes.push(vote);
+  
+      // Check if all players have voted
+      if (room.game.dayActions.votes.length === room.players.filter(player => player.isAlive).length) {
+        // Calculate the most voted player
+        const voteCount = room.game.dayActions.votes.reduce((acc, { target }) => {
+          acc[target] = (acc[target] || 0) + 1;
+          return acc;
+        }, {});
+  
+        const mostVotedPlayerId = Object.keys(voteCount).reduce((a, b) => (voteCount[a] > voteCount[b] ? a : b));
+        const mostVotedPlayer = room.players.id(mostVotedPlayerId);
+  
+        if (mostVotedPlayer) {
+          mostVotedPlayer.isAlive = false;
+          mostVotedPlayer.status = 'dead';
+        }
+  
         room.phase = 'night';
+        room.game.phase = 'night';
+        room.game.nightActions = {}; // Reset night actions for the next round
+        room.game.dayActions.votes = []; // Reset day actions for the next round
+  
         await room.save();
-        res.status(200).json({ message: 'Day voting completed. Proceed to night phase.' });
+        const io = req.app.get('io');
+        io.to(roomId).emit('gameStateUpdate', room);
+      } else {
+        await room.save();
       }
-    } catch (err) {
-      console.error('Error during day voting:', err);
-      res.status(500).json({ error: 'Failed during day voting' });
+  
+      res.json(room);
+    } catch (error) {
+      console.error('Error during voting:', error);
+      res.status(500).json({ message: 'Server error' });
     }
   }
 };
