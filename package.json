@@ -1,5 +1,6 @@
 {
   "name": "mafia-game",
+  "homepage": "https://josejoy2216.github.io/mafia",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -9,6 +10,7 @@
     "axios": "^1.7.2",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "gh-pages": "^6.1.1",
     "mongoose": "^8.4.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,6 +21,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "predeploy":"npm run build",
+    "deploy":"gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
