@@ -1,0 +1,45 @@
+.custom-glass-card {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.15); /* Semi-transparent white */
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Light border to enhance glass effect */
+    padding: 20px; /* Add padding inside the card */
+  }
+  
+  .custom-glass-card .card-body {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.25); /* Slightly more opaque for better readability */
+    border-radius: 10px;
+    padding: 20px; /* Add padding inside the card */
+  }
+  
+  .table.borderless td, .table.borderless th {
+    background-color: #d6ac6b00;
+    border: none;
+    border-radius: 8px;
+  }
+  
+  .form-control {
+    backdrop-filter: blur(5px);
+    /* background: rgba(255, 255, 255, 0.3); Semi-transparent for form elements */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Light border for form elements */
+  }
+  
+  .dashboard-layout {
+      background-color: #cfbc9d98;
+      min-height: 100vh; /* Ensure the section takes the full height of the viewport */
+      padding: 20px; /* Add padding around the content */
+    }
+    
+    .container {
+      background-color: #cfbc9d;
+      border-radius: 10px; /* Rounded corners for the container */
+      padding: 20px; /* Padding inside the container */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+    }
+    
+  .color{
+    background-color: #E7D4B5;
+  }
+  

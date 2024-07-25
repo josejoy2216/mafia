@@ -6,7 +6,7 @@ const http = require('http');
 const socket = require('./socket/socket');
 
 const roomRoutes = require('./routes/roomRoutes');
-const gameRoutes = require('./routes/gameRoutes');
+//const gameRoutes = require('./routes/gameRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,7 +18,8 @@ app.use('/api/vote', roomRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/endgame', roomRoutes);
 app.use('/api/startgame', roomRoutes);
-app.use('/api/night-action', roomRoutes);
+app.use('/api/night-action/mafia/', roomRoutes);
+app.use('/api/night-action/police/', roomRoutes);
 
 //app.use('/api/games', gameRoutes);
 

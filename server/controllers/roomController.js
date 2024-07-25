@@ -57,7 +57,7 @@ const roomController = {
       console.log(`Received request to delete room ID: ${roomId}`);
       const deletedRoom = await Room.findByIdAndDelete(roomId);
       if (!deletedRoom) {
-        return res.status(404).json({ error: 'Room not found' });
+        return res.status(200).send('Game ended and room deleted');
       }
       res.status(200).send('Game ended and room deleted');
     } catch (error) {
@@ -66,7 +66,7 @@ const roomController = {
     }
   },
 
-  // Remove player from the list  ---------------------
+  // Remove player from the list(exit room button for player)  ---------------------
   removePlayerFromRoom: async (req, res) => {
     try {
       const { roomId, playerId } = req.params;
@@ -86,8 +86,7 @@ const roomController = {
     }
   },
 
-  
-  // Start the game
+  // Start the game ------------------
   startGame: async (req, res) => {
     try {
       const { roomId, playerId } = req.params;
@@ -131,22 +130,7 @@ const roomController = {
     }
   },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  //get room details 
+  //get room details ----------------
   getRoomDetails : async (req, res) => {
     try {
       const { roomId } = req.params;
@@ -166,149 +150,9 @@ const roomController = {
   },
 
 
-
-
-
-
-
-
-
-
-
-
-
-  // Get all rooms
-  getAllRooms: async (req, res) => {
-    try {
-      const rooms = await Room.find().populate('players', 'name role'); // Populate players' details
-      res.json(rooms);
-    } catch (err) {
-      console.error('Error fetching rooms:', err);
-      res.status(500).json({ error: 'Failed to fetch rooms' });
-    }
-  },
-
-  // Get room details by code
-  getRoomByCode: async (req, res) => {
-    try {
-      const { code, id } = req.params;
-      const room = await Room.findOne({ code }).populate('players', 'name role isAlive');
-      if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
-      }
-      const player = room.players.find(player => player._id.toString() === id);
-      if (!player) {
-        return res.status(404).json({ error: 'Player not found in this room' });
-      }
-      res.json(room);
-    } catch (err) {
-      console.error('Error fetching room:', err);
-      res.status(500).json({ error: 'Failed to fetch room' });
-    }
-  },
-
-  // Get room by ID
-  getRoomById: async (req, res) => {
-    try {
-      const roomId = req.params.id;
-      const room = await Room.findById(roomId).populate('players', 'name role'); // Populate players' details
-      if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
-      }
-      res.json(room);
-    } catch (err) {
-      console.error('Error fetching room:', err);
-      res.status(500).json({ error: 'Failed to fetch room' });
-    }
-  },
-
-  // Update room by ID
-  updateRoomById: async (req, res) => {
-    try {
-      const roomId = req.params.id;
-      const { code } = req.body;
-      const updatedRoom = await Room.findByIdAndUpdate(roomId, { code }, { new: true });
-      if (!updatedRoom) {
-        return res.status(404).json({ error: 'Room not found' });
-      }
-      res.json(updatedRoom);
-    } catch (err) {
-      console.error('Error updating room:', err);
-      res.status(500).json({ error: 'Failed to update room' });
-    }
-  }
-
- 
-  
-
 };
 
 
 
 
 module.exports = roomController;
-
-
-
-// const Room = require('../models/Room');
-// const User = require('../models/Player');
-// const { generateRoomCode } = require('../utils/generateRoomCode');
-
-// exports.createRoom = async (req, res) => {
-//   const { hostName } = req.body;
-
-//   try {
-//     const host = new User({ name: hostName });
-//     await host.save();
-
-//     const roomCode = generateRoomCode();
-//     const room = new Room({
-//       code: roomCode,
-//       players: [{ _id: host._id, name: hostName, role: 'host', alive: true }],
-//     });
-
-//     await room.save();
-//     res.status(201).json(room);
-//   } catch (error) {
-//     console.error('Error creating room:', error);
-//     res.status(500).json({ message: 'Failed to create room' });
-//   }
-// };
-
-// exports.joinRoom = async (req, res) => {
-//   const { roomCode, playerName } = req.body;
-
-//   try {
-//     const room = await Room.findOne({ code: roomCode });
-//     if (!room) {
-//       return res.status(404).json({ message: 'Room not found' });
-//     }
-
-//     const player = new User({ name: playerName });
-//     await player.save();
-
-//     room.players.push({ _id: player._id, name: playerName, role: 'player', alive: true });
-//     await room.save();
-
-//     res.status(200).json(room);
-//   } catch (error) {
-//     console.error('Error joining room:', error);
-//     res.status(500).json({ message: 'Failed to join room' });
-//   }
-// };
-
-// exports.getRoom = async (req, res) => {
-//   const { roomCode } = req.params;
-
-//   try {
-//     const room = await Room.findOne({ code: roomCode });
-//     if (!room) {
-//       return res.status(404).json({ message: 'Room not found' });
-//     }
-
-//     res.status(200).json(room);
-//   } catch (error) {
-//     console.error('Error fetching room:', error);
-//     res.status(500).json({ message: 'Failed to fetch room details' });
-//   }
-// };

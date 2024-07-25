@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-//import PlayerList from './PlayerList';
 import Narrator from './Narrator';
 import socket from '../socket'; // Adjust the path if necessary
 
@@ -14,7 +13,9 @@ const Game = () => {
   const [mafiaTarget, setMafiaTarget] = useState('');
   const [policeGuess, setPoliceGuess] = useState('');
   const [hostId, setHostId] = useState('');
-  const [nightActionCompleted, setNightActionCompleted] = useState(false);
+  const [mafiaActionCompleted, setMafiaActionCompleted] = useState(false);
+  const [policeActionCompleted, setPoliceActionCompleted] = useState(false);
+  const [winMessage, setWinMessage] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,12 +38,11 @@ const Game = () => {
 
     socket.emit('joinRoom', roomId);
 
-    socket.on('gameStateUpdate', (updatedRoom) => {
-      setRoom(updatedRoom);
-    });
+    socket.on('gameStateUpdate', fetchRoom);
 
     socket.on('policeWinMessage', (message) => {
-      // Handle displaying the message to all players
+      fetchRoom();
+      setWinMessage(`${message.policeName} won the game!`);
       console.log(message); // Replace with actual UI update logic
     });
 
@@ -57,63 +57,52 @@ const Game = () => {
     };
   }, [roomId, userId, navigate]);
 
-  const handleNightAction = async () => {
+  const handleMafiaNightAction = async () => {
     try {
       setLoading(true);
-      const player = room.players.find(player => player._id === userId);
-      if (!player) {
-        setError('Player not found');
-        return;
-      }
-  
-      let action = {};
-      if (player.role === 'mafia' && mafiaTarget) {
-        action = {
-          mafiaTarget,
-          actionType: 'kill'
-        };
-      } else if (player.role === 'police' && policeGuess) {
-        action = {
-          policeGuess,
-          actionType: 'guess'
-        };
-      } else {
-        setError('Invalid action for current role or missing selection');
-        return;
-      }
-      console.log(`night-action:${roomId}/${userId}`)
-      const response = await axios.post(`http://localhost:5000/api/night-action/${roomId}/${userId}`, action);
+      const response = await axios.post(`http://localhost:5000/api/night-action/mafia/${roomId}/${userId}`, { mafiaTarget });
       setRoom(response.data.room);
-      setNightActionCompleted(true);
-      socket.emit('gameStateUpdate', response.data.room);
-  
-      if (action.actionType === 'kill' && response.data.killedPlayer) {
-        setError(`Mafia has killed ${response.data.killedPlayer.name}`);
-      } else if (action.actionType === 'guess' && response.data.policeGuess) {
-        setError(`Police guessed ${response.data.policeGuess.name}`);
-      } else {
-        setError('Night action completed');
-      }
-  
-      if (response.data.gameOver) {
-        setError('Game Over! ' + (response.data.policeCorrect ? 'Police win!' : 'Mafia win!'));
-      } else {
-        setError(null);
-      }
+      setMafiaActionCompleted(true);
+      socket.emit('gameStateUpdate', roomId);
+      setError('Night action completed');
+      console.log("Mafia action completed:", response.data.room);
     } catch (error) {
-      console.error('Error performing night action:', error);
+      console.error('Error performing mafia night action:', error);
       setError(error.response?.data?.message || 'Failed to perform night action');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNominate = (playerId) => {
-    setNominations((prevNominations) =>
-      prevNominations.includes(playerId)
-        ? prevNominations.filter((id) => id !== playerId)
-        : [...prevNominations, playerId]
-    );
+  const handlePoliceNightAction = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post(`http://localhost:5000/api/night-action/police/${roomId}/${userId}`, { policeGuess });
+      setRoom(response.data.room);
+      setPoliceActionCompleted(true);
+      socket.emit('gameStateUpdate', roomId);
+      setError('Night action completed');
+      console.log("Police action completed:", response.data.room);
+    } catch (error) {
+      console.error('Error performing police night action:', error);
+      setError(error.response?.data?.message || 'Failed to perform night action');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNominate = async (playerId) => {
+    setNominations((prevNominations) => prevNominations.includes(playerId) ? [] : [playerId]);
+    try {
+      await axios.post(`http://localhost:5000/api/nominate/${roomId}`, {
+        nominatedPlayerId: playerId,
+        voterId: userId
+      });
+      socket.emit('gameStateUpdate', roomId);
+    } catch (error) {
+      console.error('Error during nomination:', error);
+      setError(error.response?.data?.message || 'Failed to nominate player');
+    }
   };
 
   const handleVote = async () => {
@@ -133,12 +122,25 @@ const Game = () => {
     }
   };
 
+
   const endGame = async () => {
     try {
+      console.log('game Ended');
       await axios.delete(`http://localhost:5000/api/endgame/${roomId}`);
       socket.emit('endGame', roomId);
     } catch (error) {
       console.error('Error ending game:', error);
+    }
+  };
+
+  const exitGame = async () => {
+    try {
+      console.log('exiting game');
+      await axios.delete(`http://localhost:5000/api/exitgame/${roomId}/${userId}`);
+      socket.emit('exitGame', roomId, userId);
+      navigate('/');
+    } catch (error) {
+      console.error('Error exiting game:', error);
     }
   };
 
@@ -148,14 +150,21 @@ const Game = () => {
   
     // If a killed player is found, return their name
     if (killedPlayer) {
-      console.log("Killed Player:", killedPlayer.name);
       return killedPlayer.name;
     } else {
       console.log("No killed player found.");
       return "Unknown";
     }
   };
-  
+
+  const winner = () => {
+    const role = room.winner;
+    const winners = room.players.filter((player) => player.role === role);
+    const winnerNames = winners.map((winner) => winner.name).join(', '); 
+    console.log('Winners:', winnerNames);
+    return winnerNames;
+  };
+
 
   if (loading) {
     return <div>Loading...</div>;
@@ -172,7 +181,7 @@ const Game = () => {
   const player = room.players.find(player => player._id === userId);
   const isPlayerMafia = player.role === 'mafia';
   const isPlayerPolice = player.role === 'police';
-  const isPlayerAlive = player.isAlive;
+  //const isPlayerAlive = player.isAlive;
 
   return (
     <div>
@@ -180,18 +189,28 @@ const Game = () => {
       {userId === hostId && (
         <button onClick={endGame}>End Game</button>
       )}
+       {userId !== hostId && (
+        <button onClick={exitGame}>Exit Game</button>
+      )}
       </h2>
-      <h2>Player Name: {player.name}</h2>
+      <h2>Player Name: {player.name} - Votes: {player.votes.length }</h2>
       <h2>Player Role: {player.role}</h2>
 
-      
       <Narrator phase={room.phase} />
-      
-      {room.phase === 'night' && !nightActionCompleted && (
+      {winMessage && <h2>{winMessage}</h2>}
+      {room.winner !== 'nowinner' && (
+        <div>
+          <p>Player: <b>{winner()}</b> won the game with role: <b>{room.winner}</b></p>
+          <button onClick={endGame}>End Game</button>
+        </div>
+      )}
+
+      {room.winner === 'nowinner' && room.phase === 'night' && (
         <div>
           <h2>Night Actions</h2>
           <p>City is sleeping...</p>
-          {isPlayerMafia && (
+          {/* <h4>Mafia killed: {victim()}</h4> */}
+          {isPlayerMafia && !mafiaActionCompleted && (
             <div>
               <h3>Choose a target</h3>
               <select value={mafiaTarget} onChange={(e) => setMafiaTarget(e.target.value)}>
@@ -200,10 +219,10 @@ const Game = () => {
                   <option key={player._id} value={player._id}>{player.name}</option>
                 ))}
               </select>
-              <button onClick={handleNightAction}>Confirm</button>
+              <button onClick={handleMafiaNightAction}>Confirm</button>
             </div>
           )}
-          {isPlayerPolice && (
+          {isPlayerPolice && room.game.nightActions.mafiaTarget != null && !policeActionCompleted && (
             <div>
               <h3>Guess the mafia</h3>
               <select value={policeGuess} onChange={(e) => setPoliceGuess(e.target.value)}>
@@ -212,23 +231,34 @@ const Game = () => {
                   <option key={player._id} value={player._id}>{player.name}</option>
                 ))}
               </select>
-              <button onClick={handleNightAction}>Confirm</button>
+              <button onClick={handlePoliceNightAction}>Confirm</button>
             </div>
           )}
         </div>
       )}
-      {room.phase === 'day' && (
+
+      {room.winner === 'nowinner' && room.phase === 'day' && (
         <div>
           <h2>Day Phase</h2>
-          <h4>mafia killed: {victim()}</h4>
+          <h4>Mafia killed: {victim()}</h4>
           <p>Vote for a player:</p>
-          <select value={nominations[0]} onChange={(e) => handleNominate(e.target.value)}>
-            <option value=''>Select a player to vote</option>
-            {room.players.filter(player => player.isAlive && player._id !== userId).map((player) => (
-              <option key={player._id} value={player._id}>{player.name}</option>
+          <ul>
+          {room.players
+            .filter((player) => player.isAlive && player._id !== userId )
+            .map((player) => (
+              <li key={player._id}>
+                {player.name} - Votes: {player.votes.length }
+                <button onClick={() => handleNominate(player._id)}>
+                  {nominations.includes(player._id) ? 'Remove Nomination' : 'Nominate'}
+                </button>
+              </li>
             ))}
-          </select>
-          <button onClick={handleVote}>Vote</button>
+          </ul>
+
+          {userId === hostId && (
+            <button onClick={handleVote} disabled={nominations.length === 0}>Handle Vote</button>
+          )}
+          
         </div>
       )}
     </div>
