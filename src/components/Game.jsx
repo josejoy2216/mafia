@@ -18,11 +18,15 @@ const Game = () => {
   const [winMessage, setWinMessage] = useState(null);
   const navigate = useNavigate();
 
+  const getApiBaseUrl = () => {
+    return process.env.REACT_APP_API_BASE_URL;
+  };
+
   useEffect(() => {
     const fetchRoom = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://humble-contentment-production.up.railway.app/api/room/${roomId}/${userId}`);
+        const response = await axios.get(`${getApiBaseUrl()}/mafia/api/room/${roomId}/${userId}`);
         setRoom(response.data);
         setHostId(response.data.host);
         setError(null);
@@ -60,7 +64,7 @@ const Game = () => {
   const handleMafiaNightAction = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`https://humble-contentment-production.up.railway.app/api/night-action/mafia/${roomId}/${userId}`, { mafiaTarget });
+      const response = await axios.post(`${getApiBaseUrl()}/api/night-action/mafia/${roomId}/${userId}`, { mafiaTarget });
       setRoom(response.data.room);
       setMafiaActionCompleted(true);
       socket.emit('gameStateUpdate', roomId);
@@ -77,7 +81,7 @@ const Game = () => {
   const handlePoliceNightAction = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`https://humble-contentment-production.up.railway.app/api/night-action/police/${roomId}/${userId}`, { policeGuess });
+      const response = await axios.post(`${getApiBaseUrl()}/api/night-action/police/${roomId}/${userId}`, { policeGuess });
       setRoom(response.data.room);
       setPoliceActionCompleted(true);
       socket.emit('gameStateUpdate', roomId);
@@ -94,7 +98,7 @@ const Game = () => {
   const handleNominate = async (playerId) => {
     setNominations((prevNominations) => prevNominations.includes(playerId) ? [] : [playerId]);
     try {
-      await axios.post(`http://localhost:5000/api/nominate/${roomId}`, {
+      await axios.post(`${getApiBaseUrl()}/api/nominate/${roomId}`, {
         nominatedPlayerId: playerId,
         voterId: userId
       });
@@ -108,7 +112,7 @@ const Game = () => {
   const handleVote = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`https://humble-contentment-production.up.railway.app/api/vote/${roomId}`, {
+      const response = await axios.post(`${getApiBaseUrl()}/api/vote/${roomId}`, {
         playerName: nominations[0] // Assuming only one nomination for simplicity
       });
       setRoom(response.data);
@@ -126,7 +130,7 @@ const Game = () => {
   const endGame = async () => {
     try {
       console.log('game Ended');
-      await axios.delete(`https://humble-contentment-production.up.railway.app/api/endgame/${roomId}`);
+      await axios.delete(`${getApiBaseUrl()}/api/endgame/${roomId}`);
       socket.emit('endGame', roomId);
     } catch (error) {
       console.error('Error ending game:', error);
@@ -136,7 +140,7 @@ const Game = () => {
   const exitGame = async () => {
     try {
       console.log('exiting game');
-      await axios.delete(`https://humble-contentment-production.up.railway.app/api/exitgame/${roomId}/${userId}`);
+      await axios.delete(`${getApiBaseUrl()}/api/exitgame/${roomId}/${userId}`);
       socket.emit('exitGame', roomId, userId);
       navigate('/');
     } catch (error) {

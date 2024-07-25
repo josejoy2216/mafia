@@ -11,7 +11,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/mafia/" element={<Home />} />
         <Route path="/create-room" element={<CreateRoom />} />
         <Route path="/join-room" element={<JoinRoom />} />
         <Route path="/lobby/:roomId/:userId" element={<Lobby />} /> {/* Ensure Lobby route is correct */}

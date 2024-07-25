@@ -11,10 +11,14 @@ function Lobby() {
   const [hostId, setHostId] = useState('');
   const navigate = useNavigate();
 
+  const getApiBaseUrl = () => {
+    return process.env.REACT_APP_API_BASE_URL;
+  };
+
   useEffect(() => {
     const fetchRoomAndPlayers = async () => {
       try {
-        const url = `https://humble-contentment-production.up.railway.app/api/lobby/${roomId}/${userId}`;
+        const url = `${getApiBaseUrl()}/api/lobby/${roomId}/${userId}`;
         console.log(`Fetching data from: ${url}`);
         const response = await axios.get(url);
         setPlayers(response.data.players);
@@ -56,7 +60,7 @@ function Lobby() {
 
   const startGame = async () => {
     try {
-      await axios.post(`https://humble-contentment-production.up.railway.app/api/startgame/${roomId}/${userId}`);
+      await axios.post(`${getApiBaseUrl()}/api/startgame/${roomId}/${userId}`);
       socket.emit('startGame', roomId);
     } catch (error) {
       console.error('Error starting game:', error);
@@ -66,7 +70,7 @@ function Lobby() {
   const endGame = async () => {
     try {
       console.log('game Ended');
-      await axios.delete(`https://humble-contentment-production.up.railway.app/api/endgame/${roomId}`);
+      await axios.delete(`${getApiBaseUrl()}/api/endgame/${roomId}`);
       socket.emit('endGame', roomId);
     } catch (error) {
       console.error('Error ending game:', error);
@@ -76,7 +80,7 @@ function Lobby() {
   const exitGame = async () => {
     try {
       console.log('exiting game');
-      await axios.delete(`https://humble-contentment-production.up.railway.app/api/exitgame/${roomId}/${userId}`);
+      await axios.delete(`${getApiBaseUrl()}/api/exitgame/${roomId}/${userId}`);
       socket.emit('exitGame', roomId, userId);
       navigate('/');
     } catch (error) {

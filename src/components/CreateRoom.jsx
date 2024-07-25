@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  return process.env.REACT_APP_API_BASE_URL;
+};
+
 const CreateRoom = () => {
   const [hostName, setHostName] = useState('');
   const navigate = useNavigate();
 
   const handleCreateRoom = async () => {
     try {
-      const response = await axios.post('https://humble-contentment-production.up.railway.app/api/rooms/create/', { hostName });
+      const response = await axios.post(`${getApiBaseUrl()}/api/rooms/create/`, { hostName });
       console.log('Response from create room:', response.data); // Log response for debugging
       //const { room, player } = response.data;
       const room = response.data;

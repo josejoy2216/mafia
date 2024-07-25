@@ -7,10 +7,14 @@ const JoinRoom = () => {
   const [roomCode, setRoomCode] = useState('');
   const navigate = useNavigate();
 
+  const getApiBaseUrl = () => {
+    return process.env.REACT_APP_API_BASE_URL;
+  };
+
   const handleJoinRoom = async () => {
     try {
       console.log(name, roomCode); // Logging entered name and room code
-      const response = await axios.post('https://humble-contentment-production.up.railway.app/api/rooms/join', { name, roomCode });
+      const response = await axios.post(`${getApiBaseUrl()}/api/rooms/join`, { name, roomCode });
       const { roomId, playerId } = response.data;
       navigate(`/lobby/${roomId}/${playerId}`);
     } catch (error) {
