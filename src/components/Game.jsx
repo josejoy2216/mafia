@@ -16,6 +16,7 @@ const Game = () => {
   const [mafiaActionCompleted, setMafiaActionCompleted] = useState(false);
   const [policeActionCompleted, setPoliceActionCompleted] = useState(false);
   const [winMessage, setWinMessage] = useState(null);
+  const [alertMessage, setAlertMessage] = useState(null);
   const navigate = useNavigate();
 
   const getApiBaseUrl = () => {
@@ -26,7 +27,7 @@ const Game = () => {
     const fetchRoom = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${getApiBaseUrl()}/mafia/api/room/${roomId}/${userId}`);
+        const response = await axios.get(`${getApiBaseUrl()}/api/room/${roomId}/${userId}`);
         setRoom(response.data);
         setHostId(response.data.host);
         setError(null);
@@ -36,7 +37,7 @@ const Game = () => {
       } finally {
         setLoading(false);
       }
-    };  
+    };
 
     fetchRoom();
 
@@ -118,9 +119,16 @@ const Game = () => {
       setRoom(response.data);
       setNominations([]);
       setError(null);
+      socket.emit('gameStateUpdate', roomId);
     } catch (error) {
-      console.error('Error during voting:', error);
-      setError(error.response?.data?.message || 'Failed to perform voting');
+      if (error.response && error.response.status === 400) {
+        const message = error.response.data.message;
+        window.alert(message); // Display alert with the error message
+        setAlertMessage(message); // Optionally set an alert message in state for UI feedback
+      } else {
+        console.error('An unexpected error occurred:', error);
+        // Handle other unexpected errors
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +159,7 @@ const Game = () => {
   const victim = () => {
     // Filter players who are dead
     const killedPlayer = room.players.find(player => player.status === "dead" && player.isAlive === false);
-  
+
     // If a killed player is found, return their name
     if (killedPlayer) {
       return killedPlayer.name;
@@ -163,8 +171,8 @@ const Game = () => {
 
   const winner = () => {
     const role = room.winner;
-    const winners = room.players.filter((player) => player.role === role);
-    const winnerNames = winners.map((winner) => winner.name).join(', '); 
+    const winners = room.players.filter((player) => player.role === role && player.isAlive === true);
+    const winnerNames = winners.map((winner) => winner.name).join(', ');
     console.log('Winners:', winnerNames);
     return winnerNames;
   };
@@ -185,21 +193,21 @@ const Game = () => {
   const player = room.players.find(player => player._id === userId);
   const isPlayerMafia = player.role === 'mafia';
   const isPlayerPolice = player.role === 'police';
+
   //const isPlayerAlive = player.isAlive;
 
   return (
     <div>
-      <h2>Room Code: {room.code}    
-      {userId === hostId && (
-        <button onClick={endGame}>End Game</button>
-      )}
-       {userId !== hostId && (
-        <button onClick={exitGame}>Exit Game</button>
-      )}
+      <h2>Room Code: {room.code}
+        {userId === hostId && (
+          <button onClick={endGame}>End Game</button>
+        )}
+        {userId !== hostId && (
+          <button onClick={exitGame}>Exit Game</button>
+        )}
       </h2>
-      <h2>Player Name: {player.name} - Votes: {player.votes.length }</h2>
+      <h2>Player Name: {player.name} - Votes: {player.votes.length}</h2>
       <h2>Player Role: {player.role}</h2>
-
       <Narrator phase={room.phase} />
       {winMessage && <h2>{winMessage}</h2>}
       {room.winner !== 'nowinner' && (
@@ -245,24 +253,46 @@ const Game = () => {
         <div>
           <h2>Day Phase</h2>
           <h4>Mafia killed: {victim()}</h4>
-          <p>Vote for a player:</p>
-          <ul>
-          {room.players
-            .filter((player) => player.isAlive && player._id !== userId )
-            .map((player) => (
-              <li key={player._id}>
-                {player.name} - Votes: {player.votes.length }
-                <button onClick={() => handleNominate(player._id)}>
-                  {nominations.includes(player._id) ? 'Remove Nomination' : 'Nominate'}
-                </button>
-              </li>
-            ))}
+          {player.isAlive ? ( // Check if the current user is alive
+            <>
+              <p>Vote for a player:</p>
+              <ul>
+                {room.players
+                  .filter((player) => player.isAlive && player._id !== userId) // Only show alive players except the current user
+                  .map((player) => (
+                    <li key={player._id}>
+                      {player.name} - Votes: {player.votes.length}
+                      {player.isAlive && (
+                        <button onClick={() => handleNominate(player._id)}>
+                          {nominations.includes(player._id) ? 'Remove Nomination' : 'Nominate'}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+            </>
+          ) : (
+            <>
+            <p>You are dead and cannot make nominations.</p>
+            <ul>
+            {room.players
+              .filter((player) => player.isAlive && player._id !== userId) // Only show alive players except the current user
+              .map((player) => (
+                <li key={player._id}>
+                  {player.name} - Votes: {player.votes.length}
+
+                </li>
+              ))}
           </ul>
+          </>
+          )}
 
           {userId === hostId && (
-            <button onClick={handleVote} disabled={nominations.length === 0}>Handle Vote</button>
+            //<button onClick={handleVote} disabled={nominations.length === 0}>Handle Vote</button>
+            <button onClick={handleVote} >Handle Vote</button>
           )}
           
+          {alertMessage && <div className="alert">{alertMessage}</div>}
         </div>
       )}
     </div>
