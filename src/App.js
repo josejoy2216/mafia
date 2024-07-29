@@ -16,9 +16,6 @@ function App() {
         <Route path="/join-room" element={<JoinRoom />} />
         <Route path="/lobby/:roomId/:userId" element={<Lobby />} /> {/* Ensure Lobby route is correct */}
         <Route path="/startgame/:roomId/:userId" element={<Game />} />
-        {/* <Route path="/MainGame" element={<MainGame/>}>
-        
-        </Route> */}
       </Routes>
     </Router>
   );
