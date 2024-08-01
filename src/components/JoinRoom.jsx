@@ -5,7 +5,6 @@ import axios from 'axios';
 const JoinRoom = () => {
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');  
-  const [alertMessage, setAlertMessage] = useState(null);
   const navigate = useNavigate();
 
   const getApiBaseUrl = () => {
@@ -20,9 +19,8 @@ const JoinRoom = () => {
       navigate(`/lobby/${roomId}/${playerId}`);
     } catch (error) {
       if (error.response) {
-        const message = error.response.data.message || 'An error occurred'; // Default message if none provided
+        const message = error.response.data.error || 'An error occurred'; // Default message if none provided
         window.alert(message); // Display alert with the error message
-        setAlertMessage(message); // Optionally set an alert message in state for UI feedback
       } else {
         console.error('An unexpected error occurred:', error);
         window.alert('An unexpected error occurred. Please try again later.');
