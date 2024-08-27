@@ -1,0 +1,118 @@
+.create-main-page-1 {
+    height: 100vh;
+    background-image: url(../images/create-page-img-4.jpeg);
+    /* background-image: url(../asstes/images/right-img.jpeg); */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.create-main-page-2 {
+    height: 30%;
+    width: 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.create-room-container{
+    height: 70%;
+    width: 70%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    
+}
+.create-room-text-enter{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+h2{
+    font-family: 'Platypi', sans-serif;
+    font-size: 40px;
+    color: #fff;
+  }
+h5{
+    font-family: 'Platypi', sans-serif;
+    color: #fff;
+  }
+  input{
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    
+  }
+  .createroom-button{
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+
+
+
+  @media (max-width: 992px) {
+    .create-main-page-2 {
+        width: 60%;
+    }
+
+    h2 {
+        font-size: 32px;
+    }
+
+    input, button {
+        height: 35px;
+    }
+}
+
+/* Small devices (phones, less than 768px) */
+@media (max-width: 768px) {
+    .create-main-page-2 {
+        width: 80%;
+        height: 40%;
+    }
+
+    .create-room-container {
+        width: 85%;
+    }
+
+    h2 {
+        font-size: 28px;
+    }
+
+    input, button {
+        height: 35px;
+        width: 100%;
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .create-room-text-enter {
+        flex-direction: column;
+    }
+
+    button {
+        margin-left: 0;
+    }
+}

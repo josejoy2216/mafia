@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './assets/css/CreateRoom.css'
 
 const getApiBaseUrl = () => {
   return process.env.REACT_APP_API_BASE_URL;
@@ -30,15 +31,22 @@ const CreateRoom = () => {
   };
 
   return (
-    <div className="create-room-container">
-      <h2>Create Room</h2>
-      <input
-        type="text"
-        placeholder="Enter your name"
-        value={hostName}
-        onChange={(e) => setHostName(e.target.value)}
-      />
-      <button onClick={handleCreateRoom}>Create</button>
+    <div className="create-main-page-1">
+      <div className="create-main-page-2">
+        <div className="col-md-6 create-room-container">
+          <h2>Create Room</h2>
+          <div className='create-room-text-enter'>
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={hostName}
+            onChange={(e) => setHostName(e.target.value)}
+          />
+          <button className='createroom-button' onClick={handleCreateRoom}><h5>Create</h5></button>
+          </div>
+          
+        </div>
+      </div>
     </div>
   );
 };

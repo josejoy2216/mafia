@@ -3,6 +3,13 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import Narrator from './Narrator';
 import socket from '../socket'; // Adjust the path if necessary
+import './assets/css/Game.css'
+//import mainbg from './assets/images/day-phase-desktop.png'
+import dayPhaseBg from './assets/images/day-phase-desktop.png';
+import nightPhaseBg from './assets/images/night-phase-desktop.png';
+import ChatWindow from './ChatWindow';
+
+
 
 const Game = () => {
   const { roomId, userId } = useParams();
@@ -17,7 +24,9 @@ const Game = () => {
   const [policeActionCompleted, setPoliceActionCompleted] = useState(false);
   const [winMessage, setWinMessage] = useState(null);
   const [alertMessage, setAlertMessage] = useState(null);
+  const [backgroundImage, setBackgroundImage] = useState(dayPhaseBg);
   const navigate = useNavigate();
+
 
   const getApiBaseUrl = () => {
     return process.env.REACT_APP_API_BASE_URL;
@@ -48,7 +57,6 @@ const Game = () => {
     socket.on('policeWinMessage', (message) => {
       fetchRoom();
       setWinMessage(`${message.policeName} won the game!`);
-      console.log(message); // Replace with actual UI update logic
     });
 
     socket.on('gameEnded', () => {
@@ -61,6 +69,25 @@ const Game = () => {
       socket.off('gameEnded');
     };
   }, [roomId, userId, navigate]);
+
+  useEffect(() => {
+    if (room && room.phase) {
+      setBackgroundImage(room.phase === 'day' ? dayPhaseBg : nightPhaseBg);
+    }
+  }, [room]);
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'Mafia':
+        return 'red';
+      case 'Police':
+        return 'yellow';
+      case 'Civilian':
+        return 'green';
+      default:
+        return 'black';
+    }
+  };
 
   const handleMafiaNightAction = async () => {
     try {
@@ -158,7 +185,7 @@ const Game = () => {
 
   const victim = () => {
     // Filter players who are dead
-    const killedPlayer = room.players.find(player => player.status === "dead" && player.isAlive === false);
+    const killedPlayer = room.players.find(player => player.status === "Dead" && player.isAlive === false);
 
     // If a killed player is found, return their name
     if (killedPlayer) {
@@ -191,110 +218,123 @@ const Game = () => {
   }
 
   const player = room.players.find(player => player._id === userId);
-  const isPlayerMafia = player.role === 'mafia';
-  const isPlayerPolice = player.role === 'police';
+  const isPlayerMafia = player.role === 'Mafia';
+  const isPlayerPolice = player.role === 'Police';
 
   //const isPlayerAlive = player.isAlive;
 
+
+
   return (
-    <div>
-      <h2>Room Code: {room.code}
-        {userId === hostId && (
-          <button onClick={endGame}>End Game</button>
-        )}
-        {userId !== hostId && (
-          <button onClick={exitGame}>Exit Game</button>
-        )}
-      </h2>
-      <h2>Player Name: {player.name} - Votes: {player.votes.length}</h2>
-      <h2>Player Role: {player.role}</h2>
-      <Narrator phase={room.phase} />
-      {winMessage && <h2>{winMessage}</h2>}
-      {room.winner !== 'nowinner' && (
-        <div>
-          <p>Player: <b>{winner()}</b> won the game with role: <b>{room.winner}</b></p>
-          <button onClick={endGame}>End Game</button>
-        </div>
-      )}
+    <div className="game-container" style={{ backgroundImage: `url(${backgroundImage})` }}>
+      {/* <img className='image-bg' src={mainbg} alt="" /> */}
+      <div className="game-started-1">
+        <div className="game-started-2">
 
-      {room.winner === 'nowinner' && room.phase === 'night' && (
-        <div>
-          <h2>Night Actions</h2>
-          <p>City is sleeping...</p>
-          {/* <h4>Mafia killed: {victim()}</h4> */}
-          {isPlayerMafia && !mafiaActionCompleted && (
-            <div>
-              <h3>Choose a target</h3>
-              <select value={mafiaTarget} onChange={(e) => setMafiaTarget(e.target.value)}>
-                <option value=''>Select a player</option>
-                {room.players.filter(player => player.isAlive && player._id !== userId).map((player) => (
-                  <option key={player._id} value={player._id}>{player.name}</option>
-                ))}
-              </select>
-              <button onClick={handleMafiaNightAction}>Confirm</button>
+          <div className="column">
+            <h2>Player Name: {player.name}</h2>
+            <h2>Votes: {player.votes.length}</h2>
+            <div className="player-role">
+            <h2>Player Role: </h2><h2 style={{ color: getRoleColor(player.role) }} > {player.role}</h2>
             </div>
-          )}
-          {isPlayerPolice && room.game.nightActions.mafiaTarget != null && !policeActionCompleted && (
-            <div>
-              <h3>Guess the mafia</h3>
-              <select value={policeGuess} onChange={(e) => setPoliceGuess(e.target.value)}>
-                <option value=''>Select a player</option>
-                {room.players.filter(player => player.isAlive && player._id !== userId).map((player) => (
-                  <option key={player._id} value={player._id}>{player.name}</option>
-                ))}
-              </select>
-              <button onClick={handlePoliceNightAction}>Confirm</button>
-            </div>
-          )}
+          </div>
+
+          <div className="column">
+            <h2 className='roomcode'>Room Code: {room.code}</h2>
+
+            {room.phase === 'Day' && <h2>Day Phase</h2>}
+            {room.phase === 'Night' && <h2>Night Phase</h2>}
+
+            {room.winner === 'Nowinner' && room.phase === 'Night' && (
+              <div className="action-container">
+                <h2>Night Actions</h2>
+                <p>City is sleeping...</p>
+                {isPlayerMafia && !mafiaActionCompleted && (
+                  <div>
+                    <h3>Choose a target</h3>
+                    <select className='target-selection' value={mafiaTarget} onChange={(e) => setMafiaTarget(e.target.value)}>
+                      <option value=''>Select a player</option>
+                      {room.players.filter(player => player.isAlive && player._id !== userId).map((player) => (
+                        <option key={player._id} value={player._id}>{player.name}</option>
+                      ))}
+                    </select>
+                    <button className='confirm-button' onClick={handleMafiaNightAction}>Confirm</button>
+                  </div>
+                )}
+                {isPlayerPolice && room.game.nightActions.mafiaTarget != null && !policeActionCompleted && (
+                  <div>
+                    <h3>Guess the mafia</h3>
+                    <select className='target-selection' value={policeGuess} onChange={(e) => setPoliceGuess(e.target.value)}>
+                      <option value=''>Select a player</option>
+                      {room.players.filter(player => player.isAlive && player._id !== userId).map((player) => (
+                        <option key={player._id} value={player._id}>{player.name}</option>
+                      ))}
+                    </select>
+                    <button className='confirm-button' onClick={handlePoliceNightAction}>Confirm</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {room.winner === 'Nowinner' && room.phase === 'Day' && (
+              <div className="action-container">
+                <h2>Day Phase</h2>
+                
+                  <h4 className="mafia-killed" >Mafia killed: {victim()}</h4>
+                 
+                {player.isAlive ? (
+                  <>
+                    <p>Vote for a player:</p>
+                    <ul>
+                      {room.players
+                        .filter((player) => player.isAlive && player._id !== userId)
+                        .map((player) => (
+                          <li key={player._id}>
+                            {player.name} - Votes: {player.votes.length}
+                            <button className='nomination-btn' onClick={() => handleNominate(player._id)}>
+                              {nominations.includes(player._id) ? 'Remove Nomination' : 'Nominate'}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p>You are dead and cannot make nominations.</p>
+                    <ul>
+                      {room.players
+                        .filter((player) => player.isAlive && player._id !== userId)
+                        .map((player) => (
+                          <li key={player._id}>
+                            {player.name} - Votes: {player.votes.length}
+                          </li>
+                        ))}
+                    </ul>
+                  </>
+                )}
+                {userId === hostId && (
+                  <button className='handle-vote-btn' onClick={handleVote}>Handle Vote</button>
+                )}
+                {alertMessage && <div className="alert">{alertMessage}</div>}
+              </div>
+            )}
+          </div>
+
+          <div className="column">
+            <Narrator phase={room.phase} />
+            {winMessage && <h2>{winMessage}</h2>}
+            {room.winner !== 'nowinner' && (
+              <div>
+                <p>Player: <b>{winner()}</b> won the game with role: <b>{room.winner}</b></p>
+                <button className='endgame-button' onClick={endGame}>End Game</button>
+              </div>
+            )}
+          </div>
+
+          <button className='exitgame-button' onClick={exitGame}>Exit Game</button>
+          <ChatWindow roomId={roomId} playername={player.name} socket={socket} />
         </div>
-      )}
-
-      {room.winner === 'nowinner' && room.phase === 'day' && (
-        <div>
-          <h2>Day Phase</h2>
-          <h4>Mafia killed: {victim()}</h4>
-          {player.isAlive ? ( // Check if the current user is alive
-            <>
-              <p>Vote for a player:</p>
-              <ul>
-                {room.players
-                  .filter((player) => player.isAlive && player._id !== userId) // Only show alive players except the current user
-                  .map((player) => (
-                    <li key={player._id}>
-                      {player.name} - Votes: {player.votes.length}
-                      {player.isAlive && (
-                        <button onClick={() => handleNominate(player._id)}>
-                          {nominations.includes(player._id) ? 'Remove Nomination' : 'Nominate'}
-                        </button>
-                      )}
-                    </li>
-                  ))}
-              </ul>
-            </>
-          ) : (
-            <>
-            <p>You are dead and cannot make nominations.</p>
-            <ul>
-            {room.players
-              .filter((player) => player.isAlive && player._id !== userId) // Only show alive players except the current user
-              .map((player) => (
-                <li key={player._id}>
-                  {player.name} - Votes: {player.votes.length}
-
-                </li>
-              ))}
-          </ul>
-          </>
-          )}
-
-          {userId === hostId && (
-            //<button onClick={handleVote} disabled={nominations.length === 0}>Handle Vote</button>
-            <button onClick={handleVote} >Handle Vote</button>
-          )}
-          
-          {alertMessage && <div className="alert">{alertMessage}</div>}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

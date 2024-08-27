@@ -1,0 +1,167 @@
+.game-started-1{
+    height: 100vh;
+    /* background-image: url(../asstes/images/night-phase-desktop.png); */
+    
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.game-started-2 {
+    height: 90%;
+    width: 80%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-direction: row; /* Arrange content in columns */
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(1px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 20px; /* Add some padding for inner spacing */
+    position: relative; /* Positioning context for the Exit Game button */
+}
+
+.column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    /* align-items: center; */
+    /* justify-content: center; */
+    gap: 20px; /* Add space between elements */
+}
+
+.column:first-child {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align content to the left in the first column */
+}
+
+.column:nth-child(2) {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Center content in the second column */
+
+}
+
+.column:last-child {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Align content to the right in the third column */
+}
+
+.action-container {
+    margin-top: 20px; /* Separate actions from the phase title */
+    color: #000000;
+}
+
+.mafia-killed{
+    display: flex;
+    justify-content: space-around;
+    color: red;
+    
+}
+.player-role{
+    display: flex;
+    justify-content: space-between;
+}
+.roomcode{
+    font-size: 200%;
+}
+
+.endgame-button,
+.target-selection,
+.confirm-button,
+.nomination-btn,
+.handle-vote-btn {
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-top: 10px; /* Add some margin to separate buttons */
+}
+.nomination-btn, .confirm-button{
+    color: red;
+}
+
+
+.endgame-button {
+    height: 60px;
+    position: static; /* Remove absolute positioning */
+    align-self: center; /* Center within its container */
+}
+
+.exitgame-button {
+    height: 60px;
+    width: 120px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: absolute; /* Position absolutely within the game container */
+    top: 20px; /* Position 20px from the bottom */
+    right: 0; /* Center horizontally */
+    transform: translateX(-50%); /* Adjust position for perfect centering */
+}
+
+.alert {
+    color: red;
+    font-weight: bold;
+}
+
+
+@media (max-width: 768px) {
+    .game-started-2 {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+
+    .endgame-button, .exitgame-button {
+        grid-column: 1;
+        justify-self: center;
+    }
+
+    .endgame-button {
+        margin-bottom: 20px;
+    }
+
+    .exitgame-button {
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-started-2 {
+        padding: 10px;
+    }
+
+    .endgame-button, .exitgame-button {
+        width: 100%;
+    }
+
+    .endgame-button {
+        margin-bottom: 10px;
+    }
+
+    .exitgame-button {
+        margin-top: 10px;
+    }
+}
+
+
+
+
+/* ----------------------------------driping effect-------------------------------------------------------- */

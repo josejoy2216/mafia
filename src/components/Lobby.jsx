@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socket from '../socket'; // Import the socket instance
+import './assets/css/Lobby.css'
 
 function Lobby() {
   const { roomId, userId } = useParams();
@@ -89,6 +90,10 @@ function Lobby() {
   };
 
   return (
+    <div className="lobby-main-1">
+      <div className="lobby-main-2">
+
+      
     <div>
       <h1>Lobby</h1>
       <h2>Room Code: {roomCode}</h2>
@@ -100,17 +105,19 @@ function Lobby() {
         ))}
       </ul>
       {userId === hostId && players.length >= 4 && (
-        <button onClick={startGame}>Start Game</button>
+        <button className='lobby-button' onClick={startGame}>Start Game</button>
       )}
       {userId === hostId && (
-        <button onClick={endGame}>End Game</button>
+        <button className='lobby-button' onClick={endGame}>End Game</button>
       )}
       {userId !== hostId && (
         <>
         <h3>Waiting for the host to start the game..... </h3>
-        <button onClick={exitGame}>Exit Game</button>
+        <button className='lobby-button' onClick={exitGame}>Exit Game</button>
         </>
       )}
+    </div>
+    </div>
     </div>
   );
 }
